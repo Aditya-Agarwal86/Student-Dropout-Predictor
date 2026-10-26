@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Student Data{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto text-center">
+    <h1 class="font-playfair text-5xl md:text-6xl font-bold text-gray-900 dark:text-white">
+        <span data-lang-en="Predict student" data-lang-hi="छात्र के परिणामों">Predict student</span> 
+        <span class="italic" data-lang-en="outcomes" data-lang-hi="की भविष्यवाणी करें">outcomes</span>
+    </h1>
+    <p class="font-poppins text-lg text-gray-600 dark:text-gray-300 mt-6 max-w-2xl mx-auto" data-lang-en="Upload your student data to identify at-risk students and generate actionable insights for retention efforts." data-lang-hi="जोखिम वाले छात्रों की पहचान करने और प्रतिधारण प्रयासों के लिए कार्रवाई योग्य अंतर्दृष्टि उत्पन्न करने के लिए अपना छात्र डेटा अपलोड करें।">
+        Upload your student data to identify at-risk students and generate actionable insights for retention efforts.
+    </p>
+</div>
+
+<div class="max-w-4xl mx-auto mt-12">
+    <div class="bg-gray-50 dark:bg-slate-800 rounded-2xl shadow-[0_8px_28px_rgba(0,0,0,0.06)] dark:shadow-slate-900/50 p-8">
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <div id="drop-zone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-12 text-center transition-all duration-200 hover:border-gray-600 dark:hover:border-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700">
+                <div class="space-y-4">
+                    <div class="w-16 h-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                        <i data-lucide="upload" class="text-gray-600 dark:text-gray-300 w-8 h-8"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="font-poppins font-semibold text-lg text-gray-900 dark:text-white" data-lang-en="Upload Student Data" data-lang-hi="छात्र डेटा अपलोड करें">
+                            Upload Student Data
+                        </h3>
+                        <p class="font-poppins text-gray-600 dark:text-gray-400" data-lang-en="Drag and drop your CSV or Excel file here, or click to browse" data-lang-hi="अपनी CSV या Excel फ़ाइल को यहाँ खींचें और छोड़ें, या ब्राउज़ करने के लिए क्लिक करें">
+                            Drag and drop your CSV or Excel file here, or click to browse
+                        </p>
+                    </div>
+                    <input type="file" id="file-input" name="file" class="hidden" accept=".csv,.xlsx,.xls">
+                    <button type="button" id="browse-btn" class="bg-gray-900 text-white font-poppins font-medium px-6 py-3 rounded-full hover:bg-gray-800 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300 transition-colors duration-200" data-lang-en="Choose File" data-lang-hi="फ़ाइल चुनें">
+                        Choose File
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        <div id="file-name-display" class="mt-4 text-center font-poppins text-gray-600 dark:text-gray-400"></div>
+
+        <div class="mt-8 bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h4 class="font-poppins font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span data-lang-en="File Requirements" data-lang-hi="फ़ाइल आवश्यकताएँ">File Requirements</span>
+            </h4>
+            <ul class="space-y-2 text-sm font-poppins text-gray-600 dark:text-gray-400 list-disc list-inside">
+                <li data-lang-en="CSV or Excel format (.csv, .xlsx, .xls)" data-lang-hi="CSV या Excel प्रारूप (.csv, .xlsx, .xls)">CSV or Excel format (.csv, .xlsx, .xls)</li>
+                <li data-lang-en="Should NOT contain a 'Target' column" data-lang-hi="इसमें 'Target' कॉलम नहीं होना चाहिए">Should NOT contain a "Target" column</li>
+                <li data-lang-en="Must include required student demographic, academic, and financial data" data-lang-hi="इसमें आवश्यक छात्र जनसांख्यिकीय, शैक्षणिक और वित्तीय डेटा शामिल होना चाहिए">Must include required student demographic, academic, and financial data</li>
+            </ul>
+             <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-poppins font-medium text-gray-900 dark:text-white text-sm" data-lang-en="Need a sample file?" data-lang-hi="एक नमूना फ़ाइल चाहिए?">
+                      Need a sample file?
+                    </p>
+                    <p class="font-poppins text-xs text-gray-600 dark:text-gray-400 mt-1" data-lang-en="Download our sample CSV to see the expected format" data-lang-hi="अपेक्षित प्रारूप देखने के लिए हमारा नमूना CSV डाउनलोड करें">
+                      Download our sample CSV to see the expected format
+                    </p>
+                  </div>
+                  <a href="{{ url_for('sample_data') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-poppins font-medium text-sm px-4 py-2 rounded-lg transition-colors duration-200" data-lang-en="Download Sample" data-lang-hi="नमूना डाउनलोड करें">
+                    Download Sample
+                  </a>
+                </div>
+              </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const browseBtn = document.getElementById('browse-btn');
+    const fileNameDisplay = document.getElementById('file-name-display');
+
+    browseBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-gray-600', 'bg-gray-100', 'dark:border-gray-400', 'dark:bg-slate-700');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-gray-600', 'bg-gray-100', 'dark:border-gray-400', 'dark:bg-slate-700');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-gray-600', 'bg-gray-100', 'dark:border-gray-400', 'dark:bg-slate-700');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        fileNameDisplay.textContent = `Selected file: ${file.name}`;
+        fileInput.form.submit();
+    }
+</script>
+{% endblock %}
+

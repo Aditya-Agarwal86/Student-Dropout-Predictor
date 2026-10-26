@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Dashboard{% endblock %}
+
+{% block content %}
+<div class="absolute inset-0 -z-10 overflow-hidden">
+    <div class="floating-icon" style="left: 10%; top: 20%; animation-duration: 18s;"><i data-lucide="bar-chart-3" class="w-12 h-12 text-red-500"></i></div>
+    <div class="floating-icon" style="left: 80%; top: 30%; animation-duration: 22s;"><i data-lucide="users" class="w-16 h-16 text-blue-500"></i></div>
+    <div class="floating-icon" style="left: 25%; top: 70%; animation-duration: 25s;"><i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-500"></i></div>
+    <div class="floating-icon" style="left: 90%; top: 80%; animation-duration: 15s;"><i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i></div>
+</div>
+
+<div id="loading-spinner" class="text-center py-20">
+    <div class="w-12 h-12 mx-auto bg-gray-900 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
+        <i data-lucide="bar-chart-3" class="text-white w-6 h-6"></i>
+    </div>
+    <p class="font-poppins text-gray-600 dark:text-gray-400 mt-4" data-lang-en="Loading dashboard data..." data-lang-hi="डैशबोर्ड डेटा लोड हो रहा है...">Loading dashboard data...</p>
+</div>
+
+<div id="dashboard-content" class="hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    </div>
+    
+    <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 chart-container mb-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <h3 class="font-playfair text-lg font-bold text-gray-900 dark:text-gray-100 mb-4" data-lang-en="Overall Risk Distribution" data-lang-hi="समग्र जोखिम वितरण">Overall Risk Distribution</h3>
+        <div class="h-64 md:h-80">
+          <canvas id="riskPieChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <div class="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200/80 dark:border-gray-700/80">
+            <div>
+                <h2 class="font-playfair text-xl font-bold text-gray-900 dark:text-gray-100" data-lang-en="Student Predictions" data-lang-hi="छात्र भविष्यवाणियां">Student Predictions</h2>
+                <p class="font-poppins text-sm text-gray-600 dark:text-gray-400 mt-1" data-lang-en="Review and sort student risk profiles." data-lang-hi="छात्र जोखिम प्रोफाइल की समीक्षा और छंटाई करें।">Review and sort student risk profiles.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                 <div class="relative">
+                    <select id="sort-select" class="font-poppins text-sm bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full px-4 py-2 appearance-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 transition">
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400"></i>
+                </div>
+                <a href="{{ url_for('download_excel') }}" class="flex items-center gap-2 bg-gray-900 text-white font-poppins font-medium px-4 py-2 rounded-full hover:bg-gray-800 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300 transition-colors duration-200 text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span data-lang-en="Download & Email Report" data-lang-hi="रिपोर्ट डाउनलोड और ईमेल करें">Download & Email Report</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="p-2">
+            <table class="min-w-full">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Student ID" data-lang-hi="छात्र आईडी">Student ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Course" data-lang-hi="कोर्स">Course</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Age" data-lang-hi="आयु">Age</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Risk Level" data-lang-hi="जोखिम स्तर">Risk Level</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Probability" data-lang-hi="संभावना">Probability</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Actions" data-lang-hi="कार्रवाई">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body" class="divide-y divide-gray-200/80 dark:divide-gray-700/80">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-30px); } 100% { transform: translateY(0px); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .floating-icon { position: absolute; opacity: 0.1; animation: float 20s ease-in-out infinite; }
+    .dark .floating-icon { opacity: 0.05; }
+    .summary-card, .chart-container, #student-table-body tr { animation: fadeInUp 0.6s ease-out forwards; opacity: 0; }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const dashboardContent = document.getElementById('dashboard-content');
+        const sortSelect = document.getElementById('sort-select');
+        let riskPieChart = null;
+        let allStudents = [];
+        let summaryData = {};
+        let currentLang = localStorage.getItem('language') || 'en';
+
+        const translations = {
+            en: {
+                totalStudents: 'Total Students', highRisk: 'High Risk', mediumRisk: 'Medium Risk', lowRisk: 'Low Risk',
+                high: 'High', medium: 'Medium', low: 'Low',
+                sortBy: 'Sort by: Default', riskDesc: 'Risk: High to Low', riskAsc: 'Risk: Low to High', probDesc: 'Probability: High to Low',
+                viewDetails: 'View Details', noData: 'No student data to display.'
+            },
+            hi: {
+                totalStudents: 'कुल छात्र', highRisk: 'उच्च जोखिम', mediumRisk: 'मध्यम जोखिम', lowRisk: 'कम जोखिम',
+                high: 'उच्च', medium: 'मध्यम', low: 'कम',
+                sortBy: 'क्रमबद्ध करें: डिफ़ॉल्ट', riskDesc: 'जोखिम: उच्च से निम्न', riskAsc: 'जोखिम: निम्न से उच्च', probDesc: 'संभावना: उच्च से निम्न',
+                viewDetails: 'विवरण देखें', noData: 'प्रदर्शित करने के लिए कोई छात्र डेटा नहीं है।'
+            }
+        };
+
+        function populateSortOptions() {
+            sortSelect.innerHTML = `
+                <option value="default">${translations[currentLang].sortBy}</option>
+                <option value="risk-desc">${translations[currentLang].riskDesc}</option>
+                <option value="risk-asc">${translations[currentLang].riskAsc}</option>
+                <option value="prob-desc">${translations[currentLang].probDesc}</option>
+            `;
+        }
+
+        function getRiskBadge(riskLevel) {
+            switch (riskLevel) {
+                case 'High': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+                case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+                case 'Low': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+                default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+            }
+        }
+        
+        function getThemeColors() {
+            return {
+                legend: document.documentElement.classList.contains('dark') ? '#f9fafb' : '#374151',
+                borderColor: document.documentElement.classList.contains('dark') ? '#374151' : '#ffffff'
+            };
+        }
+
+        function renderPieChart() {
+            if (!document.getElementById('riskPieChart')) return;
+            if (riskPieChart) riskPieChart.destroy();
+            
+            const themeColors = getThemeColors();
+            const ctx = document.getElementById('riskPieChart').getContext('2d');
+            const data = {
+                labels: [translations[currentLang].highRisk, translations[currentLang].mediumRisk, translations[currentLang].lowRisk],
+                datasets: [{
+                    data: [summaryData.high_risk, summaryData.medium_risk, summaryData.low_risk],
+                    backgroundColor: ['#EF4444', '#F59E0B', '#10B981'],
+                    borderColor: themeColors.borderColor,
+                    borderWidth: 2, hoverOffset: 8
+                }]
+            };
+
+            riskPieChart = new Chart(ctx, {
+                type: 'doughnut', data: data,
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: themeColors.legend, font: { family: "'Poppins', sans-serif", size: 14 }, padding: 20 }},
+                        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw} (${((c.raw / c.chart.getDatasetMeta(0).total) * 100).toFixed(1)}%)` }}
+                    }
+                }
+            });
+        }
+
+        function displayStudents(students) {
+            const tableBody = document.getElementById('student-table-body');
+            tableBody.innerHTML = '';
+            if (students.length === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 font-poppins text-gray-500 dark:text-gray-400">${translations[currentLang].noData}</td></tr>`;
+            } else {
+                students.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    let riskText = translations[currentLang][student.Risk_Level.toLowerCase()];
+                    row.className = `transition-colors duration-200 ${student.Risk_Level === 'High' ? 'bg-red-100/50 hover:bg-red-200/50 dark:bg-red-900/20 dark:hover:bg-red-900/40' : student.Risk_Level === 'Medium' ? 'bg-yellow-100/50 hover:bg-yellow-200/50 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40' : 'bg-green-100/50 hover:bg-green-200/50 dark:bg-green-900/20 dark:hover:bg-green-900/40'}`;
+                    row.style.animationDelay = `${index * 0.03}s`;
+                    row.innerHTML = `
+                        <td class="px-4 py-4 whitespace-nowrap font-poppins text-sm text-gray-700 dark:text-gray-300">#${student.id + 1}</td>
+                        <td class="px-4 py-4 whitespace-nowrap font-poppins text-sm text-gray-700 dark:text-gray-300">${student.Course || 'N/A'}</td>
+                        <td class="px-4 py-4 whitespace-nowrap font-poppins text-sm text-gray-700 dark:text-gray-300">${student['Age at enrollment']}</td>
+                        <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRiskBadge(student.Risk_Level)}">${riskText}</span></td>
+                        <td class="px-4 py-4 whitespace-nowrap font-poppins text-sm text-gray-700 dark:text-gray-300">${(student.Dropout_Probability * 100).toFixed(1)}%</td>
+                        <td class="px-4 py-4 whitespace-nowrap"><a href="/student/${student.id}" class="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-poppins text-sm font-medium"><i data-lucide="eye" class="w-4 h-4"></i>${translations[currentLang].viewDetails}</a></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard-data');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                summaryData = data.summary;
+                const summaryContainer = document.querySelector('#dashboard-content .grid');
+                summaryContainer.innerHTML = `
+                    <div class="summary-card bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.1s;">
+                        <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6 text-gray-600 dark:text-gray-300"></i></div>
+                        <div><p class="font-poppins text-sm text-gray-600 dark:text-gray-400">${translations[currentLang].totalStudents}</p><p class="font-poppins text-3xl font-bold text-gray-900 dark:text-gray-100">${data.summary.total_students}</p></div>
+                    </div>
+                    <div class="summary-card bg-red-100/50 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.2s;">
+                        <div class="w-12 h-12 bg-red-200 dark:bg-red-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-300"></i></div>
+                        <div><p class="font-poppins text-sm text-red-700 dark:text-red-300">${translations[currentLang].highRisk}</p><p class="font-poppins text-3xl font-bold text-red-900 dark:text-red-200">${data.summary.high_risk}</p></div>
+                    </div>
+                    <div class="summary-card bg-yellow-100/50 dark:bg-yellow-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.3s;">
+                        <div class="w-12 h-12 bg-yellow-200 dark:bg-yellow-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="info" class="w-6 h-6 text-yellow-600 dark:text-yellow-300"></i></div>
+                        <div><p class="font-poppins text-sm text-yellow-700 dark:text-yellow-300">${translations[currentLang].mediumRisk}</p><p class="font-poppins text-3xl font-bold text-yellow-900 dark:text-yellow-200">${data.summary.medium_risk}</p></div>
+                    </div>
+                    <div class="summary-card bg-green-100/50 dark:bg-green-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.4s;">
+                        <div class="w-12 h-12 bg-green-200 dark:bg-green-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-6 h-6 text-green-600 dark:text-green-300"></i></div>
+                        <div><p class="font-poppins text-sm text-green-700 dark:text-green-300">${translations[currentLang].lowRisk}</p><p class="font-poppins text-3xl font-bold text-green-900 dark:text-green-200">${data.summary.low_risk}</p></div>
+                    </div>
+                `;
+                allStudents = data.students;
+                displayStudents(allStudents);
+                loadingSpinner.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+                lucide.createIcons();
+                renderPieChart();
+            } catch (error) {
+                loadingSpinner.innerHTML = `<p class="font-poppins text-red-600">${error.message}</p>`;
+            }
+        }
+        
+        sortSelect.addEventListener('change', (event) => {
+            const sortBy = event.target.value;
+            let sortedStudents = [...allStudents];
+            const riskOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+            if (sortBy === 'risk-desc') sortedStudents.sort((a, b) => riskOrder[b.Risk_Level] - riskOrder[a.Risk_Level]);
+            else if (sortBy === 'risk-asc') sortedStudents.sort((a, b) => riskOrder[a.Risk_Level] - riskOrder[b.Risk_Level]);
+            else if (sortBy === 'prob-desc') sortedStudents.sort((a, b) => b.Dropout_Probability - a.Dropout_Probability);
+            displayStudents(sortedStudents);
+        });
+        
+        document.addEventListener('languageChange', (e) => {
+            currentLang = e.detail.lang;
+            populateSortOptions();
+            fetchDashboardData();
+        });
+        
+        document.getElementById('theme-toggle').addEventListener('click', () => setTimeout(renderPieChart, 50));
+        
+        populateSortOptions();
+        fetchDashboardData();
+    });
+</script>
+{% endblock %}
+
