@@ -1,116 +1,137 @@
-# Student Dropout Prediction System
+# Student Dropout Prediction & Healthcare Analytics System
 
-Universities often discover a student has dropped out weeks after they stop attending lectures and submit no work. By that point, academic advisors have missed the window for intervention.
+A dual-domain predictive analytics and business intelligence platform built on Flask, Scikit-Learn, and Python.
 
-This project uses early-semester administrative, academic, and financial records to predict student dropout risk before students withdraw. Trained on 4,424 student records from the Higher Education dataset, the Support Vector Machine (SVM) pipeline reaches 83.6% test accuracy and 73.9% recall. Predictions are exposed through an interactive web interface with per-student risk breakdowns, diagnostic remarks, and color-coded Excel reports for retention teams.
+This project combines:
+1. **Higher Education Retention**: An SVM classification system predicting student dropout risk from early-semester academic and socioeconomic indicators.
+2. **Healthcare Operations & AI**: An operational analytics engine, claims rejection-risk model, process mining analyzer, NLP call audit pipeline, and BI-ready export framework designed for health plans.
 
-## Model and Pipeline
+---
 
-The prediction pipeline uses an SVM classifier with a Radial Basis Function (RBF) kernel and balanced class weights to account for class imbalance between continuing students and dropouts.
+## Architecture Overview
 
-- **Data source**: 4,424 records from the UCI Higher Education Student Performance dataset.
-- **Preprocessing**: Categorical features are encoded using `LabelEncoder`. Numeric and categorical inputs are scaled with `StandardScaler`.
-- **Model caching**: Trained weights, encoders, and scaler objects are serialized to `model_cache.joblib`. Warm starts load in under 50 milliseconds without refitting.
-- **Evaluation** (885-sample test split, 20% holdout):
-  - Accuracy: 83.6%
-  - Precision: 74.7%
-  - Recall: 73.9%
-  - Confusion Matrix: 530 true negatives, 210 true positives, 71 false positives, 74 false negatives.
+```mermaid
+graph TD
+    subgraph Web_Application ["Flask Web Application (app.py)"]
+        IndexRoute["/ (Upload & Predict)"]
+        DashRoute["/dashboard (Retention Dashboard)"]
+        HealthRoute["/healthcare (Healthcare Dashboard)"]
+        ExportRoute["/healthcare/export/* (BI Export API)"]
+    end
 
-## Risk Scoring
+    subgraph Student_ML ["Student Dropout Retention Engine"]
+        SVMModel["SVM (RBF Kernel, Class-Balanced)"]
+        Cache["model_cache.joblib"]
+        StudentData["Data.csv (4,424 Records)"]
+        SVMModel --> Cache
+    end
 
-The model outputs continuous dropout probabilities converted into three operational tiers:
+    subgraph Healthcare_Core ["Healthcare Analytics & AI Core (core_analytics/)"]
+        Service["HealthcareAnalyticsService (Singleton Coordinator)"]
+        Mod1["Module 1: Synthetic Data, SQL Profiler & DQ Engine"]
+        Mod2["Module 2: Anomaly Detection (IQR, Mod-Z, IsolationForest)"]
+        Mod3["Module 3: Operational KPIs & Claims Risk Classification"]
+        Mod4["Module 4: NLP Call Transcripts & Human Review Audit"]
+        Mod5["Module 5: Claims Process Mining & Bottlenecks"]
+        Mod6["Module 6: BI Exports & Manifest Generator"]
 
-- **High Risk (>= 70%)**: Flagged for immediate advisor contact.
-- **Medium Risk (40% to 69%)**: Flagged for academic monitoring and tutoring support.
-- **Low Risk (< 40%)**: On track for continuation.
+        Service --> Mod1
+        Service --> Mod2
+        Service --> Mod3
+        Service --> Mod4
+        Service --> Mod5
+        Service --> Mod6
+    end
 
-Each prediction includes automated diagnostic remarks based on key risk indicators, including tuition fee arrears, debtor status, low first-semester units approved, previous qualification grade below threshold, and mature student enrollment age.
+    subgraph Downstream_BI ["Downstream BI Platforms"]
+        PowerBI["Power BI Desktop"]
+        Tableau["Tableau Desktop"]
+    end
 
-## Dataset Features
-
-The application accepts bulk student files (.csv and .xlsx) containing 23 predictor columns. Datasets uploaded for prediction must omit the `Target` column.
-
-| Category | Columns | Notes |
-| :--- | :--- | :--- |
-| Demographics | `Gender`, `Age at enrollment`, `Marital status`, `International`, `Displaced` | Encoded citizenship, marital, and relocation indicators |
-| Academic History | `Course`, `Previous qualification`, `Previous qualification (grade)`, `Daytime/evening attendance`, `Educational special needs` | Secondary education grades and degree track |
-| Socioeconomic | `Mother's qualification`, `Father's qualification`, `Mother's occupation`, `Father's occupation` | Parental education and employment tiers |
-| Financial | `Tuition fees up to date`, `Debtor`, `Scholarship holder` | Fee status, debt status, and active financial aid |
-| Semester 1 Performance | `Curricular units 1st sem (credited)`, `(enrolled)`, `(evaluations)`, `(approved)`, `(grade)`, `(without evaluations)` | Credits enrolled, completed, and grade point average |
-
-A pre-formatted sample file matching this schema is available at `sample_student_data.csv` or through the **Download Sample** link in the web interface.
-
-## Application Architecture
-
-The system is organized into a Flask web application with a bilingual (English and Hindi) frontend built with Tailwind CSS.
-
-- `app.py`: Core application routes, ML pipeline execution, Excel report generation, and API endpoints.
-- `templates/`: Server-rendered Jinja templates including `index.html` (upload portal), `dashboard.html` (interactive risk charts and student tables), and `student_detail.html` (individual diagnostic cards).
-- `setup.py`: Environment verification script that validates Python versions, dependencies, and file paths.
-- `test_ml.py`: Standalone ML script that runs the data preprocessing and model evaluation without launching the web server.
-- `tests/test_app.py`: Automated integration test suite covering route handling, file uploads, invalid file rejections, and Excel generation.
-
-## Local Setup
-
-### 1. Clone the repository and enter the directory
-```bash
-git clone https://github.com/<your-username>/student-dropout-prediction.git
-cd student-dropout-prediction
+    IndexRoute --> Student_ML
+    DashRoute --> Student_ML
+    HealthRoute --> Service
+    ExportRoute --> Mod6
+    Mod6 -->|11 Clean CSVs + manifest.json| Downstream_BI
 ```
 
-### 2. Create and activate a virtual environment
+---
+
+## Key Modules Summary
+
+| Module | Core Responsibility | Key Technologies | Primary Outputs |
+| :--- | :--- | :--- | :--- |
+| **Student Retention** | Student dropout classification & diagnostic risk remarked reports | Scikit-Learn (SVM), Joblib, Pandas | 83.6% accuracy, 73.9% recall, Excel reports |
+| **Module 1: Healthcare Data & DQ** | Deterministic synthetic healthcare dataset generator & SQL profiling | SQLite, Pandas, SQL profiling | `claims`, `members`, `providers` tables, 9 DQ checks |
+| **Module 2: Anomaly Detection** | Statistical and machine learning anomaly detection on financial claims | IQR Tukey fences, Modified Z-score (MAD), Isolation Forest | Anomaly scores, record flags, feature-level attribution |
+| **Module 3: Claims & Risk AI** | Operational KPIs, PMPM expenditure, and pre-adjudication rejection risk | Scikit-Learn Pipeline, ColumnTransformer, RandomForest | Billed/paid spend, denial rate %, PMPM, rejection risk tiers |
+| **Module 4: NLP & Human Review** | Extraction of structured entities from call transcripts & audit trail | Regex, TF-IDF + LogisticRegression, SQLite Audit Table | Intent classification, claim ID extraction, reviewer audit log |
+| **Module 5: Process Mining** | Adjudication workflow event mining, rework loops, bottlenecks | Markovian transitions, Pandas, NumPy | Case cycle times, variant taxonomy, delay bottlenecks |
+| **Module 6: Dashboard & BI Exports** | Healthcare dashboard UI, REST summary API, BI CSV export bundle | Flask, Tailwind CSS, Chart.js, Zipfile | `/healthcare`, 11 CSV exports, `manifest.json`, ZIP bundle |
+| **Module 7: QA & Validation** | Full-suite regression testing, data leakage audit, reconciliation | Pytest (78 tests), Git audit, validation guides | Complete test verification, interview preparation notes |
+
+---
+
+## Quick Start & Installation
+
+### 1. Clone Repository & Setup Virtual Environment
 ```bash
-# macOS/Linux
-python3 -m venv venv
+# Clone the repository
+git clone https://github.com/Aditya-Agarwal86/Student-Dropout-Predictor.git
+cd Student-Dropout-Predictor
+
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
 source venv/bin/activate
 
-# Windows
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Install dependencies
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Verify the setup
-Run the environment verification script to check package installations and directory structures:
+### 2. Verify Setup
 ```bash
 python setup.py
 ```
 
-### 5. Start the server
+### 3. Run Automated Tests
+```bash
+# Run all 78 unit and integration tests
+python -m pytest
+
+# Run ML pipeline benchmark
+python test_ml.py
+```
+
+### 4. Start Flask Application
 ```bash
 python app.py
 ```
 Open `http://localhost:5000` in your browser.
 
-## Running Tests
+---
 
-Run the full pytest suite:
-```bash
-pytest tests/ -v
-```
+## Walkthrough: Demonstrating the Application
 
-Run the standalone ML pipeline benchmark:
-```bash
-python test_ml.py
-```
+1. **Student Dropout Prediction Portal**:
+   - Navigate to `http://localhost:5000/`.
+   - Download the pre-formatted dataset via **Download Sample CSV**.
+   - Upload the file to inspect the interactive retention dashboard, risk bands, and per-student diagnostic remarks.
+2. **Healthcare Analytics & AI Dashboard**:
+   - Navigate to `http://localhost:5000/healthcare`.
+   - Review operational claims KPIs, denial rate, PMPM spending, and data-quality health.
+   - Inspect the Machine Learning rejection-risk distribution donut chart (Low / Medium / High).
+   - Review process mining variants and statistical workflow bottleneck transitions.
+3. **Power BI / Tableau BI Export Downloads**:
+   - Click **"Export BI Bundle (.zip)"** or download individual CSV tables.
+   - Refer to `core_analytics/BI_DASHBOARD_GUIDE.md` for star-schema relationship diagrams, DAX formulas, and Tableau LOD calculations.
 
-## API Reference
+---
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Upload portal for student data files |
-| `POST` | `/upload` | Processes uploaded CSV or Excel file and generates risk scores |
-| `GET` | `/dashboard` | Interactive risk distribution and sortable student tables |
-| `GET` | `/api/dashboard-data` | JSON endpoint returning aggregated counts and student records |
-| `GET` | `/student/<int:id>` | Detailed demographic, academic, and financial breakdown for a student |
-| `GET` | `/download_excel` | Exports color-coded Excel report with risk highlighting |
-| `GET` | `/sample-data` | Downloads valid sample CSV for testing |
+## Responsible AI & Demonstration Limitations
 
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+1. **Synthetic Healthcare Data**: All member IDs, provider profiles, claims, event logs, and transcripts are generated with fixed random seeds for demonstration. No protected health information (PHI) is used.
+2. **Prototype Scope**: Statistical outlier flags (IQR, Isolation Forest) indicate unusual records requiring review—they do not constitute proof of fraud or abuse.
+3. **Target Leakage Prevention**: In the claims rejection model, post-adjudication features (`claim_status`, `denial_reason`, `paid_amount`) are excluded from pre-adjudication risk scoring.

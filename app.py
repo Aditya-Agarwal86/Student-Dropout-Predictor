@@ -412,6 +412,107 @@ def sample_data():
     flash("Sample data file not found on the server.", "danger")
     return redirect(url_for('index'))
 
+
+# =====================================================================
+# Healthcare Analytics & BI-Ready Exports (Portfolio Extension)
+# =====================================================================
+from core_analytics.service import HealthcareAnalyticsService
+from core_analytics.exports.bi_export_generator import (
+    EXPORT_WHITELIST,
+    generate_bi_export_tables,
+    generate_manifest,
+    export_all_to_zip_stream
+)
+
+@app.route('/healthcare')
+def healthcare_dashboard():
+    """Renders the comprehensive healthcare analytics & BI export dashboard."""
+    try:
+        service = HealthcareAnalyticsService.get_instance()
+        data = service.get_dashboard_data()
+        return render_template('healthcare_dashboard.html', **data)
+    except Exception as e:
+        logger.exception("Error loading healthcare dashboard")
+        flash(f"Error loading healthcare analytics dashboard: {e}", "danger")
+        return redirect(url_for('index'))
+
+@app.route('/healthcare/api/summary')
+def healthcare_api_summary():
+    """JSON API endpoint returning high-level healthcare operational summaries."""
+    service = HealthcareAnalyticsService.get_instance()
+    data = service.get_dashboard_data()
+    return jsonify({
+        "status": "success",
+        "overview": data['overview'],
+        "claims_kpis": data['claims_kpis'],
+        "pmpm_metrics": data['pmpm_metrics'],
+        "risk_distribution": data['risk_distribution'],
+        "anomaly_summary": {
+            "iqr_high_cost_count": data['anomaly_summary']['iqr_high_cost_count'],
+            "iqr_upper_fence": data['anomaly_summary']['iqr_upper_fence'],
+            "isolation_forest_anomalies": data['anomaly_summary']['isolation_forest_anomalies']
+        },
+        "process_summary": {
+            "total_cases": data['process_summary']['total_cases'],
+            "avg_cycle_time_days": data['process_summary']['avg_cycle_time_days'],
+            "rework_case_rate_pct": data['process_summary']['rework_case_rate_pct'],
+            "override_count": data['process_summary']['override_count']
+        }
+    })
+
+@app.route('/healthcare/export/<filename>')
+def healthcare_download_export(filename):
+    """Safely serves a single BI export CSV or manifest.json with strict filename whitelisting."""
+    if filename not in EXPORT_WHITELIST:
+        return jsonify({"error": "File not found or export access denied."}), 404
+
+    service = HealthcareAnalyticsService.get_instance()
+    tables = generate_bi_export_tables(service)
+
+    if filename == 'manifest.json':
+        manifest = generate_manifest(tables)
+        manifest_str = json.dumps(manifest, indent=2) if 'json' in globals() else __import__('json').dumps(manifest, indent=2)
+        buf = io.BytesIO(manifest_str.encode('utf-8'))
+        return send_file(
+            buf,
+            as_attachment=True,
+            download_name='manifest.json',
+            mimetype='application/json'
+        )
+
+    if filename in tables:
+        df = tables[filename]
+        buf = io.BytesIO()
+        df.to_csv(buf, index=False)
+        buf.seek(0)
+        return send_file(
+            buf,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='text/csv'
+        )
+
+    return jsonify({"error": "Export generation failed for the requested table."}), 500
+
+@app.route('/healthcare/export-all')
+def healthcare_download_bundle():
+    """Packages all 11 BI export CSVs and the manifest.json into a single downloadable ZIP archive."""
+    try:
+        service = HealthcareAnalyticsService.get_instance()
+        zip_stream = export_all_to_zip_stream(service)
+        return send_file(
+            zip_stream,
+            as_attachment=True,
+            download_name='healthplans_ai_bi_export_bundle.zip',
+            mimetype='application/zip'
+        )
+    except Exception as e:
+        logger.exception("Error generating BI export bundle")
+        flash(f"Error packaging BI export bundle: {e}", "danger")
+        return redirect(url_for('healthcare_dashboard'))
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+

@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Healthcare Analytics & Operations Dashboard | HealthPlans.ai Demo{% endblock %}
+
+{% block content %}
+<div class="space-y-8 pb-12">
+    <!-- Notice Banner -->
+    <div class="bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+        <div class="flex items-start">
+            <div class="flex-shrink-0 text-amber-500 mt-0.5">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    Synthetic Healthcare Analytics Environment (Demonstration Portfolio)
+                </p>
+                <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    All members, providers, claims, event logs, and transcripts presented are purely synthetic records generated with fixed seeds for the Analytics &amp; AI internship demonstration. Statistical anomalies are highlighted for audit review and do <strong>not</strong> constitute proof of fraud.
+                </p>
+            </div>
+            <div class="ml-auto flex items-center gap-2">
+                <a href="{{ url_for('healthcare_download_bundle') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md shadow-sm transition">
+                    <i data-lucide="archive" class="w-4 h-4"></i>
+                    <span>Export BI Bundle (.zip)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header & Quick Nav -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold font-playfair text-slate-900 dark:text-white flex items-center gap-2.5">
+                <i data-lucide="activity" class="text-indigo-600 dark:text-indigo-400 w-7 h-7"></i>
+                Healthcare Operations &amp; Claims Analytics
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Unified claims adjudication, ML rejection risk scoring, NLP call review, and process mining intelligence.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
+                    <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Service Synchronized
+                </span>
+                <p class="text-[11px] text-slate-400 mt-0.5">Deterministic Seed: 42</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top KPI Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Billed & Paid -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Billed (Dedup)</p>
+                    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                        ${{ "{:,.2f}".format(claims_kpis.total_billed) }}
+                    </p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <i data-lucide="receipt" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span class="text-slate-500 dark:text-slate-400">Paid: ${{ "{:,.2f}".format(claims_kpis.total_paid) }}</span>
+                <span class="text-slate-400">{{ claims_kpis.evaluated_claim_count }} claims</span>
+            </div>
+        </div>
+
+        <!-- Denial Rate -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Claims Denial Rate</p>
+                    <p class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">
+                        {{ claims_kpis.denial_rate_pct }}%
+                    </p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span class="text-rose-500">{{ claims_kpis.denied_count }} denied claims</span>
+                <span class="text-slate-400">Deduplicated</span>
+            </div>
+        </div>
+
+        <!-- PMPM Expense -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">FY 2023 PMPM</p>
+                    <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                        ${{ "{:,.2f}".format(pmpm_metrics.pmpm) }}
+                    </p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span class="text-slate-500 dark:text-slate-400">Paid: ${{ "{:,.2f}".format(pmpm_metrics.total_paid_spend) }}</span>
+                <span class="text-slate-400">{{ pmpm_metrics.total_member_months }} Mbr-Mos</span>
+            </div>
+        </div>
+
+        <!-- Workflow Rework Rate -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Workflow Rework Rate</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+                        {{ process_summary.rework_case_rate_pct }}%
+                    </p>
+                </div>
+                <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <i data-lucide="git-branch" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <span class="text-amber-600">{{ process_summary.avg_cycle_time_days }}d Avg Cycle</span>
+                <span class="text-slate-400">{{ process_summary.override_count }} Overrides</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Operational Visualizations (Charts) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Rejection Risk ML Distribution -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="cpu" class="w-4 h-4 text-indigo-500"></i>
+                        Predicted Rejection Risk Distribution
+                    </h2>
+                    <span class="text-xs text-slate-400">RandomForest</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    Pre-adjudication classification into calibrated risk tiers (Low &lt; 0.25, Med 0.25–0.60, High &ge; 0.60).
+                </p>
+                <div class="relative h-56 flex items-center justify-center">
+                    <canvas id="riskDistributionChart"></canvas>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-around text-center text-xs">
+                <div>
+                    <span class="block font-bold text-emerald-600">{{ risk_distribution.low }}</span>
+                    <span class="text-slate-400">Low Risk</span>
+                </div>
+                <div>
+                    <span class="block font-bold text-amber-600">{{ risk_distribution.medium }}</span>
+                    <span class="text-slate-400">Medium Risk</span>
+                </div>
+                <div>
+                    <span class="block font-bold text-rose-600">{{ risk_distribution.high }}</span>
+                    <span class="text-slate-400">High Risk</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Denial Reasons Breakdown -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-rose-500"></i>
+                        Denial Reason Distribution
+                    </h2>
+                    <span class="text-xs text-slate-400">Observed Outcomes</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    Frequency breakdown of root-cause denials across adjudicated claim submissions.
+                </p>
+                <div class="relative h-56 flex items-center justify-center">
+                    <canvas id="denialsChart"></canvas>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500 flex justify-between">
+                <span>Total Denied: {{ claims_kpis.denied_count }}</span>
+                <span>Top: {{ denial_reasons[0].denial_reason if denial_reasons else 'None' }}</span>
+            </div>
+        </div>
+
+        <!-- Model Performance & Quality Summary -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="check-check" class="w-4 h-4 text-emerald-500"></i>
+                        AI Pipeline &amp; Data Health
+                    </h2>
+                    <span class="text-xs text-slate-400">Audit Status</span>
+                </div>
+                <div class="space-y-3 mt-4 text-xs">
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-500 dark:text-slate-400">Data Quality Rule Checks</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">
+                            {{ dq_summary.passed_count }} / {{ dq_summary.total_rules }} Passed ({{ dq_summary.pass_rate_pct }}%)
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-500 dark:text-slate-400">Rejection Model ROC-AUC</span>
+                        <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ model_metrics.roc_auc or 'N/A' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-500 dark:text-slate-400">Rejection Model F1 Score</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">{{ model_metrics.f1_score }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-500 dark:text-slate-400">Statistical High-Cost Outliers (IQR)</span>
+                        <span class="font-semibold text-amber-600">{{ anomaly_summary.iqr_high_cost_count }} claims (&gt; ${{ anomaly_summary.iqr_upper_fence }})</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-slate-500 dark:text-slate-400">Multivariate Anomalies (IsoForest)</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">{{ anomaly_summary.isolation_forest_anomalies }} claims</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5">
+                        <span class="text-slate-500 dark:text-slate-400">NLP Intent Classification Acc.</span>
+                        <span class="font-semibold text-emerald-600">{{ (nlp_eval_metrics.intent.exact_match_accuracy * 100)|round(1) }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-400 italic">
+                Anti-leakage certified: Pre-adjudication features strictly separated from settlement outcomes.
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Process Mining & Workflow Intelligence -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="git-pull-request" class="w-4 h-4 text-indigo-500"></i>
+                    Claims Adjudication Process Mining &amp; Bottlenecks
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Workflow variant paths, rework loops, and statistically significant operational delays.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded">
+                    Total Cases: {{ process_summary.total_cases }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Variants Table -->
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Dominant Process Variants</h3>
+                <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="p-2.5">Variant</th>
+                                <th class="p-2.5">Cases</th>
+                                <th class="p-2.5">Share</th>
+                                <th class="p-2.5">Avg Cycle</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            {% for v in process_summary.top_variants %}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                                <td class="p-2.5 font-mono text-[11px] text-indigo-600 dark:text-indigo-400" title="{{ v.activity_sequence }}">
+                                    {{ v.variant_id }}
+                                </td>
+                                <td class="p-2.5 font-medium">{{ v.case_count }}</td>
+                                <td class="p-2.5 text-slate-500">{{ v.share_pct }}%</td>
+                                <td class="p-2.5 text-slate-500">{{ v.avg_cycle_time_days }}d</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bottlenecks Identified -->
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Operational Bottlenecks (&gt; 1.0 &sigma;)</h3>
+                <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300">
+                            <tr>
+                                <th class="p-2.5">Transition Path</th>
+                                <th class="p-2.5">Volume</th>
+                                <th class="p-2.5">Mean Delay</th>
+                                <th class="p-2.5">Severity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            {% for b in process_summary.bottlenecks %}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                                <td class="p-2.5">
+                                    <span class="font-medium text-slate-900 dark:text-white">{{ b.source_activity }}</span>
+                                    <span class="text-slate-400 mx-1">&rarr;</span>
+                                    <span class="font-medium text-slate-900 dark:text-white">{{ b.target_activity }}</span>
+                                </td>
+                                <td class="p-2.5">{{ b.transition_count }}</td>
+                                <td class="p-2.5 font-semibold text-rose-600">{{ b.mean_duration_days }}d</td>
+                                <td class="p-2.5">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                        Bottleneck
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-slate-400">No high-severity bottlenecks detected.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Provider Performance Preview -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="stethoscope" class="w-4 h-4 text-emerald-500"></i>
+                    Provider Operational Scorecards
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Aggregated provider billing metrics and clean claim compliance.
+                </p>
+            </div>
+            <a href="{{ url_for('healthcare_download_export', filename='provider_analytics.csv') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Download Provider CSV</span>
+            </a>
+        </div>
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300">
+                    <tr>
+                        <th class="p-2.5">Provider ID</th>
+                        <th class="p-2.5">Specialty</th>
+                        <th class="p-2.5">Total Claims</th>
+                        <th class="p-2.5">Total Billed</th>
+                        <th class="p-2.5">Total Paid</th>
+                        <th class="p-2.5">Denial Rate</th>
+                        <th class="p-2.5">Reimbursement Rate</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    {% for p in provider_analytics %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
+                        <td class="p-2.5 font-mono text-slate-900 dark:text-white font-medium">{{ p.provider_id }}</td>
+                        <td class="p-2.5 text-slate-500">{{ p.specialty or 'General' }}</td>
+                        <td class="p-2.5">{{ p.total_claims }}</td>
+                        <td class="p-2.5">${{ "{:,.2f}".format(p.total_billed) }}</td>
+                        <td class="p-2.5 font-medium text-emerald-600">${{ "{:,.2f}".format(p.total_paid) }}</td>
+                        <td class="p-2.5">
+                            <span class="font-semibold {{ 'text-rose-600' if p.denial_rate_pct > 25.0 else 'text-slate-600' }}">
+                                {{ p.denial_rate_pct }}%
+                            </span>
+                        </td>
+                        <td class="p-2.5 text-slate-500">{{ p.reimbursement_rate_pct }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 4: BI-Ready Export Hub -->
+    <div class="bg-slate-900 text-white rounded-xl p-6 shadow-md border border-slate-800">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <i data-lucide="layers" class="text-indigo-400 w-5 h-5"></i>
+                    Power BI &amp; Tableau BI-Ready Export Center
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">
+                    Download schema-standardized CSV tables and manifest for seamless BI modeling. See <code class="text-indigo-300">core_analytics/BI_DASHBOARD_GUIDE.md</code> for star-schema relationship diagrams and DAX formulas.
+                </p>
+            </div>
+            <a href="{{ url_for('healthcare_download_bundle') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow transition">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                <span>Download All 11 Exports + Manifest (.zip)</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+            <a href="{{ url_for('healthcare_download_export', filename='claims_summary.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">claims_summary.csv</span>
+                    <span class="text-[10px] text-slate-400">Claims Fact Table</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='provider_analytics.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">provider_analytics.csv</span>
+                    <span class="text-[10px] text-slate-400">Provider Dimension</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='denial_breakdown.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">denial_breakdown.csv</span>
+                    <span class="text-[10px] text-slate-400">Denial Aggregates</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='rejection_risk_scores.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">rejection_risk_scores.csv</span>
+                    <span class="text-[10px] text-slate-400">ML Predictions</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='anomaly_flags.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">anomaly_flags.csv</span>
+                    <span class="text-[10px] text-slate-400">Statistical Outliers</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='data_quality_results.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">data_quality_results.csv</span>
+                    <span class="text-[10px] text-slate-400">Rule Results</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='process_case_summaries.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">process_case_summaries.csv</span>
+                    <span class="text-[10px] text-slate-400">Workflow Cases</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='process_variants.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">process_variants.csv</span>
+                    <span class="text-[10px] text-slate-400">Variant Taxonomy</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='process_transitions.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">process_transitions.csv</span>
+                    <span class="text-[10px] text-slate-400">Markovian Edges</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='process_bottlenecks.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">process_bottlenecks.csv</span>
+                    <span class="text-[10px] text-slate-400">Delay Candidates</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='transcript_extraction_results.csv') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">transcript_extraction_results.csv</span>
+                    <span class="text-[10px] text-slate-400">NLP &amp; Human Audits</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+
+            <a href="{{ url_for('healthcare_download_export', filename='manifest.json') }}" class="p-3 bg-slate-800 hover:bg-slate-700/80 rounded-lg border border-slate-700 flex items-center justify-between group transition">
+                <div>
+                    <span class="font-semibold text-slate-200 block group-hover:text-indigo-300">manifest.json</span>
+                    <span class="text-[10px] text-slate-400">Metadata &amp; Grain</span>
+                </div>
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Rejection Risk Distribution Donut Chart
+    const riskCtx = document.getElementById('riskDistributionChart');
+    if (riskCtx) {
+        new Chart(riskCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                datasets: [{
+                    data: [
+                        {{ risk_distribution.low }},
+                        {{ risk_distribution.medium }},
+                        {{ risk_distribution.high }}
+                    ],
+                    backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // 2. Denial Reason Distribution Bar Chart
+    const denialsCtx = document.getElementById('denialsChart');
+    if (denialsCtx) {
+        const denialLabels = [
+            {% for d in denial_reasons[:5] %}
+            "{{ d.denial_reason }}",
+            {% endfor %}
+        ];
+        const denialCounts = [
+            {% for d in denial_reasons[:5] %}
+            {{ d.count }},
+            {% endfor %}
+        ];
+
+        new Chart(denialsCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: denialLabels,
+                datasets: [{
+                    label: 'Denied Claims',
+                    data: denialCounts,
+                    backgroundColor: '#f43f5e',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                    x: {
+                        ticks: {
+                            callback: function(val, index) {
+                                const full = this.getLabelForValue(val);
+                                return full.length > 15 ? full.substr(0, 15) + '...' : full;
+                            },
+                            font: { size: 10 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
