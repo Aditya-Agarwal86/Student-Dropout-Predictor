@@ -97,3 +97,38 @@ def test_upload_valid_sample_and_dashboard_flow(client):
     excel_response = client.get('/download_excel')
     assert excel_response.status_code == 200
     assert 'spreadsheetml' in excel_response.content_type
+
+def test_upload_excel_file(client):
+    """Test uploading an Excel (.xlsx) file and generating predictions."""
+    df = pd.read_csv('sample_student_data.csv')
+    excel_bytes = io.BytesIO()
+    df.to_excel(excel_bytes, index=False)
+    excel_bytes.seek(0)
+
+    data = {'file': (excel_bytes, 'sample.xlsx')}
+    response = client.post('/upload', data=data, content_type='multipart/form-data', follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers['Location'].endswith('/dashboard')
+
+def test_upload_missing_required_columns(client):
+    """Test upload fails gracefully when required columns are absent."""
+    df = pd.DataFrame({'Age at enrollment': [20, 22]})
+    csv_bytes = io.BytesIO()
+    df.to_csv(csv_bytes, index=False)
+    csv_bytes.seek(0)
+
+    data = {'file': (csv_bytes, 'missing_cols.csv')}
+    response = client.post('/upload', data=data, content_type='multipart/form-data', follow_redirects=True)
+    assert response.status_code == 200
+    assert b"File missing required columns" in response.data
+
+def test_student_detail_invalid_id(client):
+    """Test navigating to an out-of-range student ID redirects to dashboard with error."""
+    # Ensure there's data in the dashboard first
+    with open('sample_student_data.csv', 'rb') as f:
+        client.post('/upload', data={'file': (f, 'sample.csv')}, content_type='multipart/form-data')
+    
+    response = client.get('/student/999999', follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Student ID not found" in response.data
+
